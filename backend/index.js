@@ -48,9 +48,10 @@ app.get('/', (req, res) => {
 
 app.post('/deploy', async (req, res) => {
     console.log('Request:', req.body);
-    const { repository, installCommand, buildCommand, outputDir, branch } = req.body;
+    const { repository, rootDirectory, installCommand, buildCommand, outputDir, branch } = req.body;
 
     if (!repository) return res.status(400).send('Repository is required');
+    if (!rootDirectory) return res.status(400).send('Root Directory is required');
     if (!installCommand) return res.status(400).send('Install Command is required');
     if (!buildCommand) return res.status(400).send('Build Command is required');
     if (!outputDir) return res.status(400).send('Output Directory is required');
@@ -99,10 +100,11 @@ app.post('/deploy', async (req, res) => {
     echo "" > /home/node/${folderName}/log.txt;
     git clone -b ${branch} ${repository} ${folderName};
     cd /home/node/${folderName};
+    cd ${rootDirectory};
     ${installCommand};
     ${buildCommand};
     mkdir /home/node/builds/${folderName};
-    cp -r /home/node/${folderName}/${outputDir} /home/node/builds/${folderName}`;
+    cp -r /home/node/${folderName}/${rootDirectory}/${outputDir} /home/node/builds/${folderName}`;
 
     if (installCommand.startsWith('pnpm')) {
         containerCommand = `npm i -g pnpm; ${containerCommand}`;

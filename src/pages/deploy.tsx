@@ -19,7 +19,7 @@ function Logs({ name, deploying }: { name: string, deploying?: boolean }) {
 
     useEffect(() => {
         if (!name) return;
-        const interval = setInterval(async () => {
+        const interval: ReturnType<typeof setInterval> = setInterval(async () => {
             if (!deploying) return clearInterval(interval);
             const logs = await axios.get(`${BUILDER_BACKEND}/logs/${name}`);
             console.log(logs.data);
@@ -49,6 +49,10 @@ export default function Deploy() {
     const { managerProcess, refresh } = useDeploymentManager();
     const [projName, setProjName] = useState("");
     const [repoUrl, setRepoUrl] = useState("");
+    const [rootDirectory, setRootDirectory] = useState("./");
+    const [directories, setDirectories] = useState<string[]>([]);
+    const [loadingDirectories, setLoadingDirectories] = useState(false);
+    const [directoryError, setDirectoryError] = useState("");
     const [installCommand, setInstallCommand] = useState("npm ci");
     const [buildCommand, setBuildCommand] = useState("npm run build");
     const [outputDir, setOutputDir] = useState("./dist");
@@ -64,6 +68,29 @@ export default function Deploy() {
         port: 443,
         protocol: "https",
     });
+
+    async function fetchDirectories() {
+        if (!repoUrl) return;
+        const [owner, repo] = repoUrl.replace("https://github.com/", "").split("/");
+        setLoadingDirectories(true);
+        setDirectoryError("");
+
+        try {
+            const response = await axios.get(
+                `https://api.github.com/repos/${owner}/${repo}/contents/`
+            );
+            const directories = response.data.filter((file: any) =>
+                file.type === "dir" && file.name !== "node_modules" &&
+                file.name !== ".github" && file.name !== "dist" && file.name !== ".DS_Store"
+                && file.name !== ".vscode");
+            setDirectories(["./", ...directories.map((dir: any) => dir.name)]);
+        } catch (error) {
+            setDirectoryError("Failed to fetch directories");
+            console.error(error);
+        } finally {
+            setLoadingDirectories(false);
+        }
+    }
 
     async function fetchBranches() {
         if (!repoUrl) return;
@@ -87,6 +114,7 @@ export default function Deploy() {
 
     useEffect(() => {
         fetchBranches();
+        fetchDirectories();
     }, [repoUrl]);
 
     async function deploy() {
@@ -104,9 +132,9 @@ export default function Deploy() {
 
         setDeploying(true);
         const query = `local res = db:exec[[
-            INSERT INTO Deployments (Name, RepoUrl, Branch, InstallCMD, BuildCMD, OutputDIR, ArnsProcess)
+            INSERT INTO Deployments (Name, RepoUrl, RootDirectory, Branch, InstallCMD, BuildCMD, OutputDIR, ArnsProcess)
                 VALUES
-            ('${projName}', '${repoUrl}', '${selectedBranch}', '${installCommand}', '${buildCommand}', '${outputDir}', '${arnsProcess}')
+            ('${projName}', '${repoUrl}', '${rootDirectory}', '${selectedBranch}', '${installCommand}', '${buildCommand}', '${outputDir}', '${arnsProcess}')
         ]]`;
         console.log(query);
 
@@ -118,7 +146,8 @@ export default function Deploy() {
         try {
             const txid = await axios.post(`${BUILDER_BACKEND}/deploy`, {
                 repository: repoUrl,
-                branch: selectedBranch, 
+                branch: selectedBranch,
+                rootDirectory: rootDirectory,
                 installCommand,
                 buildCommand,
                 outputDir,
@@ -163,6 +192,25 @@ export default function Deploy() {
 
                 <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="repo-url">Repository Url</label>
                 <Input placeholder="e.g. github.com/weeblet/super-cool-app" id="repo-url" required onChange={(e) => setRepoUrl(e.target.value)} />
+
+                <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="root-directory">Root Directory (Optional)</label>
+                <div className="flex gap-3">
+                    <Input placeholder={rootDirectory} disabled id="root-dir" />
+                    <select
+                        className="border rounded-md px-2"
+                        value={rootDirectory}
+                        onChange={(e) => setRootDirectory(e.target.value)}
+                        disabled={!repoUrl || loadingDirectories}
+                    >
+                        <option value="" disabled>Edit</option>
+                        {directories.map((dir: any) => (
+                            <option key={dir} value={dir}>
+                                {dir}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                {directoryError && <div className="text-red-500">{directoryError}</div>}
 
                 <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="branch">Branch</label>
                 <select
