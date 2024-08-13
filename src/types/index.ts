@@ -2,6 +2,7 @@ export type TDeployment = {
     ID: number,
     Name: string,
     RepoUrl: string,
+    RootDir: string,
     InstallCMD: string,
     Branch: string,
     BuildCMD: string,
