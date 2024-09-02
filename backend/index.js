@@ -6,8 +6,23 @@ import dockerode from "dockerode";
 import fs from "fs";
 import Irys from "@irys/sdk";
 import { createClient } from "redis";
+import { App } from "@octokit/app";
+import { createNodeMiddleware } from "@octokit/webhooks";
+import dotenv from "dotenv";
+import {getItem, setItem} from "./storage.js";
+
+dotenv.config();
 
 const PORT = 3001;
+
+const githubApp = new App({
+    appId: process.env.GITHUB_APP_ID,
+    privateKey: process.env.GITHUB_PRIVATE_KEY,
+    webhooks: {
+        secret: process.env.GITHUB_WEBHOOK_SECRET,
+    }
+})
+
 const MAX_CONTAINERS = 3;
 let activeContainers = 0;
 
@@ -25,6 +40,8 @@ redisClient.on("error", (err) => console.error("Redis Client Error", err));
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(createNodeMiddleware(githubApp));
+app.use('/api/github/webhooks', createNodeMiddleware(githubApp));
 
 export async function deployFolder(path) {
     console.log("Deploying folder at", path);
@@ -57,6 +74,108 @@ export async function deployFolder(path) {
 app.get('/', (req, res) => {
     res.send('<pre>permaDeploy Builder Running!</pre>');
 });
+
+app.get('/github/install', async (req, res) => {
+    const installationUrl = `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new`;
+    res.redirect(installationUrl);
+})
+
+app.get('/github/installation', async (req, res) => {
+    const installationId = getItem('installation_id');
+    if (!installationId) {
+        return res.status(200).send({
+            installed: false,
+            message: 'Installation ID not found'
+        });
+    }
+    res.send({ installed: true, installationId });
+})
+
+app.get('/github/callback', async (req, res) => {
+    const { installation_id, setup_action } = req.query;
+
+     //TODO store installation_id in database
+    if (setup_action === 'install') {
+        setItem('installation_id', installation_id);
+        res.redirect('http://localhost:3000/deploy');
+    } else if(setup_action === 'cancel') {
+        res.status(400).send('Installation cancelled');
+    } else if(setup_action === 'configure') {
+        res.status(400).send('Installation configuration required');
+    } else {
+        res.status(400).send('Installation failed!!');
+    }
+})
+
+app.get('/github/repos', async (req, res) => {
+    const installationId = getItem('installation_id');
+    if (!installationId) {
+        return res.status(400).send('Installation ID not found');
+    }
+
+    try {
+        const octokit = await githubApp.getInstallationOctokit(installationId);
+        const { data } = await octokit.request('GET /installation/repositories', {
+            headers: {
+              'X-GitHub-Api-Version': '2022-11-28'
+            }
+          });
+        if (!data.repositories || data.repositories.length === 0) {
+            return res.status(404).json({ error: 'No repositories found for this installation' });
+        }
+        res.json({ repositories: data.repositories });
+    } catch (error) {
+        console.error('Error fetching repos:', error);
+        res.status(500).json({error: 'Error fetching repos'});
+    }
+})
+
+app.get('/github/repo-details/:owner/:repo', async (req, res) => {
+    const installationId = getItem('installation_id');
+    if (!installationId) {
+        return res.status(400).send('Installation ID not found');
+    }
+    const owner = req.params.owner.trim();
+    const repo = req.params.repo.trim();
+
+    try {
+        const octokit = await githubApp.getInstallationOctokit(installationId);
+        const { data } = await octokit.request('GET /repos/{owner}/{repo}', {
+            owner,
+            repo,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching repo details:', error);
+        res.status(500).send('Error fetching repo details: ' + error.message);
+    }
+});
+
+app.get('/github/branches/:owner/:repo', async (req, res) => {
+    const installationId = getItem('installation_id');
+    if (!installationId) {
+        return res.status(400).send('Installation ID not found');
+    }
+    const owner = req.params.owner.trim();
+    const repo = req.params.repo.trim();
+    
+    try {
+        const octokit = await githubApp.getInstallationOctokit(installationId);
+        const { data } = await octokit.request('GET /repos/{owner}/{repo}/branches', {
+            owner,
+            repo,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        });
+        res.send(data);
+    } catch (error) {
+        res.status(500).send('Error fetching branches');
+    }
+})
 
 app.post('/deploy', async (req, res) => {
     console.log('Request:', req.body);
@@ -179,6 +298,49 @@ async function processQueue() {
         }
     }
 }
+
+githubApp.webhooks.on('push', async ({ octokit, payload }) => {
+    if (payload.ref !== `refs/heads/${payload.repository.default_branch}`) {
+        const { owner, name: repo } = payload.repository;
+        const branch = payload.repository.default_branch;
+        const installationId = payload.installation.id;
+
+        try {
+            const config = await getDeploymentConfig(octokit, owner, repo);
+
+            if (!config) {
+                console.error('No deployment config found for', owner, repo);
+                return;
+            }
+
+            const deploymentData = {
+                repository: `${owner}/${repo}`,
+                installCommand: config.installCommand,
+                buildCommand: config.buildCommand,
+                outputDir: config.outputDir,
+                branch,
+                installationId,
+            };
+
+            const response = await fetch('http://localhost:3001/deploy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(deploymentData),
+            });
+
+            if (!response.ok) {
+                console.error('Deployment failed:', await response.text());
+            } else {
+                console.log(`Deployment triggered for ${owner}/${repo}`);
+            }
+
+        } catch (error) {
+            console.error('Error processing webhook:', error);
+        }
+    }
+})
 
 app.get('/logs/:folder', (req, res) => {
     const { folder } = req.params;

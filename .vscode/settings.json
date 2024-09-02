@@ -1,0 +1,9 @@
+{
+    "Lua.workspace.library": [
+        "/Users/kunalgarg/Library/Application Support/Code/User/globalStorage/sumneko.lua/addonManager/addons/ao/module/library"
+    ],
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.diagnostics.disable": [
+        "undefined-field"
+    ]
+}
