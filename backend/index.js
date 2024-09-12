@@ -97,7 +97,7 @@ app.get('/github/callback', async (req, res) => {
      //TODO store installation_id in database
     if (setup_action === 'install') {
         setItem('installation_id', installation_id);
-        res.redirect('http://localhost:3000/deploy');
+        res.redirect('http://localhost:3000/import');
     } else if(setup_action === 'cancel') {
         res.status(400).send('Installation cancelled');
     } else if(setup_action === 'configure') {

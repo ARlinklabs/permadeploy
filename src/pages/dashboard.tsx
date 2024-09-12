@@ -31,6 +31,7 @@ export default function Dashboard() {
     useEffect(() => {
         console.log("connected", connected, address)
         refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return <Layout>

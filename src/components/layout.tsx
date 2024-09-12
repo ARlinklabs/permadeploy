@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 
 const menuItems = [
     { label: "Overview", href: "/dashboard" },
-    { label: "Deploy", href: "/deploy" },
+    { label: "Deploy", href: "/import" },
 ];
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
