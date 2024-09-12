@@ -12,6 +12,7 @@ import axios from "axios";
 import Ansi from "ansi-to-react";
 import { BUILDER_BACKEND } from "@/lib/utils";
 import useDeploymentManager from "@/hooks/useDeploymentManager";
+import Component from "@/components/import-page";
 
 function Logs({ name, deploying }: { name: string, deploying?: boolean }) {
     console.log(name);
@@ -48,7 +49,7 @@ export default function Deploy() {
     const globalState = useGlobalState();
     const { managerProcess, refresh } = useDeploymentManager();
     const [projName, setProjName] = useState("");
-    const [repoUrl, setRepoUrl] = useState("");
+    // const [repoUrl, setRepoUrl] = useState("");
     const [installCommand, setInstallCommand] = useState("npm install");
     const [buildCommand, setBuildCommand] = useState("npm run build");
     const [outputDir, setOutputDir] = useState("./dist");
@@ -154,16 +155,18 @@ export default function Deploy() {
 
     async function deploy() {
         if (!projName) return toast.error("Project Name is required");
-        if (!repoUrl) return toast.error("Repository Url is required");
+        if (!selectedRepo) return toast.error("Repository Url is required");
         if (!selectedBranch) return toast.error("Branch is required");
         if (!installCommand) return toast.error("Install Command is required");
         if (!buildCommand) return toast.error("Build Command is required");
         if (!outputDir) return toast.error("Output Directory is required");
-        if (!arnsProcess) return toast.error("ArNS Process ID is required");
+        // if (!arnsProcess) return toast.error("ArNS Process ID is required");
 
         if (deploying) return;
 
         if (!globalState.managerProcess) return toast.error("Manager process not found");
+
+        const repoUrl = `https://github.com/${selectedRepo}`;
 
         setDeploying(true);
         const query = `local res = db:exec[[
@@ -219,18 +222,16 @@ export default function Deploy() {
 
     return (
         <Layout>
-            <div className="text-xl my-5 mb-10">Create New Deployment</div>
-
+            {/* <div className="text-xl my-5 mb-10">Create New Deployment</div>
             <div className="md:min-w-[60%] w-full max-w-lg mx-auto flex flex-col gap-2">
                 {!isAppInstalled ? (
                     <Button onClick={installGitHubApp}>Install GitHub App</Button>
                 ) : (
                     <>
-                        <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="project-name">Project Name</label>
+                        <label htmlFor="project-name">Project Name</label>
                         <Input placeholder="e.g. Coolest AO App" id="project-name" required onChange={(e) => setProjName(e.target.value)} />
 
-                        <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="repo-select">Select Repository</label>
-
+                        <label htmlFor="repo-select">Select Repository</label>
                         <select
                             className="border rounded-md p-2"
                             value={selectedRepo}
@@ -246,9 +247,10 @@ export default function Deploy() {
                                 </option>
                             ))}
                         </select>
+
                         {selectedRepo && (
                             <>
-                                <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="branch">Branch</label>
+                                <label htmlFor="branch">Branch</label>
                                 <select
                                     className="border rounded-md p-2"
                                     value={selectedBranch}
@@ -262,27 +264,25 @@ export default function Deploy() {
                                         </option>
                                     ))}
                                 </select>
-                                {branchError && <div className="text-red-500">{branchError}</div>}
 
-                                <label className="text-muted-foreground pl-2 pt-10 -mb-1" htmlFor="install-command">Install Command</label>
+                                <label htmlFor="install-command">Install Command</label>
                                 <Input value={installCommand} placeholder="e.g. npm ci" id="install-command" onChange={(e) => setInstallCommand(e.target.value)} />
 
-                                <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="build-command">Build Command</label>
+                                <label htmlFor="build-command">Build Command</label>
                                 <Input value={buildCommand} placeholder="e.g. npm run build" id="build-command" onChange={(e) => setBuildCommand(e.target.value)} />
 
-                                <label className="text-muted-foreground pl-2 pt-2 -mb-1" htmlFor="output-dir">Output Directory</label>
+                                <label htmlFor="output-dir">Output Directory</label>
                                 <Input value={outputDir} placeholder="e.g. ./dist" id="output-dir" onChange={(e) => setOutputDir(e.target.value)} />
 
                                 <Button className="w-full mt-10" variant="secondary" onClick={deploy}>
                                     {deploying ? <Loader className="animate-spin mr-2" /> : "Deploy"}
                                 </Button>
-
-                                {deploying && <Logs name={projName} deploying={deploying} />}
                             </>
                         )}
                     </>
                 )}
-            </div>
+            </div> */}
+            <Component />
         </Layout>
     );
 }
