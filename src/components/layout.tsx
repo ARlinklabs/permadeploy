@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { ConnectButton, useConnection } from "arweave-wallet-kit";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Github, GitBranch } from "lucide-react";
 
 const menuItems = [
     { label: "Overview", href: "/dashboard" },
@@ -54,6 +55,27 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 </div>
             </nav>
             <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-col min-h-screen bg-neutral-800 text-gray-100">
+                    <main className="flex-1 flex">
+                        <div className="w-72 border-r border-gray-800 p-4 hidden md:block dark:bg-neutral-900">
+                            <h2 className="font-semibold mb-4 text-gray-100">Import Repository</h2>
+                            <nav className="space-y-2">
+                                <Link
+                                    className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                                    href="#"
+                                >
+                                    <Github className="h-5 w-5" />
+                                    <span>GitHub</span>
+                                </Link>
+                                <div className="flex items-center space-x-2 text-gray-500 cursor-not-allowed">
+                                    <GitBranch className="h-5 w-5" />
+                                    <span>Protocol land</span>
+                                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-full ml-auto border border-green-400">Coming Soon</span>
+                                </div>
+                            </nav>
+                        </div>
+                    </main>
+                </div>
                 <div className="flex-1  rounded-t-2xl md:rounded-none bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 overflow-auto">
                     {connected ? children : "Connect Wallet to continue :)"}
                 </div>
