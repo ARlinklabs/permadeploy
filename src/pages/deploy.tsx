@@ -78,7 +78,7 @@ export default function Deploy() {
       setProjName(repoName);
       setSelectedBranch(default_branch);
       setBuildCommand(buildCommand || "npm run build");
-      setInstallCommand(installCommand || "npm ci");
+      setInstallCommand(installCommand || "npm install");
       setOutputDir(outputDir || "./dist");
       fetchBranches(repoFullName);
     } catch (error: any) {

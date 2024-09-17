@@ -52,7 +52,7 @@ export async function deployFolder(folderPath) {
         console.log("Deploying folder at", folderPath);
 
         // Load your JWK
-        const jwk = JSON.parse(await fsPromises.readFile('/Users/nischalnaik/Documents/permadeploy/backend/Wallet .json', 'utf-8'));
+        const jwk = JSON.parse(await fsPromises.readFile('/Users/kunalgarg/Downloads/permadeploy/backend/wallet.json', 'utf-8'));
         console.log('JWK loaded');
 
         // Initialize Turbo
