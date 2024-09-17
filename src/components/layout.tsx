@@ -1,78 +1,96 @@
 import React, { useEffect, useState } from "react";
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { cn, DEPLOYMENT_WALLET } from "@/lib/utils";
-import axios from "axios"
-import {
-    IconArrowLeft,
-    IconBrandTabler,
-    IconSettings,
-    IconUserBolt,
-} from "@tabler/icons-react";
-import { Plus, User2, UserCircle2 } from "lucide-react";
+import axios from "axios";
+import { Bell, ChevronDown, HelpCircle, Plus, UserCircle2 } from "lucide-react";
+import { IconBrandTabler } from "@tabler/icons-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { ConnectButton, useConnection } from "arweave-wallet-kit";
-import Head from "next/head";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Github, GitBranch } from "lucide-react";
 
-const links = [
-    {
-        label: "Dashboard",
-        href: "/dashboard",
-        icon: (
-            <IconBrandTabler className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-        ),
-    },
-    {
-        label: "New Deployment",
-        href: "/deploy",
-        icon: (
-            <Plus className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-        ),
-    }
+const menuItems = [
+    { label: "Overview", href: "/dashboard" },
+    { label: "Deploy", href: "/import" },
 ];
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
-    const { connected } = useConnection()
-    const [arBalance, setArBalance] = useState(0)
-    const [open, setOpen] = useState(false);
+    const { connected } = useConnection();
+    const [arBalance, setArBalance] = useState(0);
+    const router = useRouter();
 
     useEffect(() => {
-        axios.get(`https://arweave.net/wallet/${DEPLOYMENT_WALLET}/balance`).then(res => setArBalance((res.data as number) / 1000000000000))
-    }, [])
+        axios.get(`https://arweave.net/wallet/${DEPLOYMENT_WALLET}/balance`)
+            .then(res => setArBalance((res.data as number) / 1000000000000));
+    }, []);
+
     return (
-        <div
-            className={cn(
-                "flex flex-col md:flex-row bg-gray-100 dark:bg-neutral-800 w-full flex-1 mx-auto border border-neutral-200 dark:border-neutral-700 overflow-hidden",
-                "min-h-screen" // for your use case, use `h-screen` instead of `h-[60vh]`
-            )}
-        >
-            <Sidebar open={open} setOpen={setOpen}>
-                <SidebarBody className="justify-between gap-10 min-h-screen overflow-clip">
-                    <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-                        <Link href="/" className="text-2xl whitespace-nowrap">{open ? "⚡️ ARlink" : "⚡️"}</Link>
-                        <div className="mt-8 flex flex-col gap-2">
-                            {links.map((link, idx) => (
-                                <SidebarLink key={idx} link={link} />
-                            ))}
+        <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-neutral-800">
+            <nav className="flex flex-col bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
+                <div className="flex items-center justify-between px-4 py-2">
+                    <div className="flex items-center space-x-4">
+                        <Link href="/" className="text-2xl">⚡️ ARlink</Link>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        <Button variant="ghost" size="sm">
+                            <HelpCircle className="h-5 w-5" />
+                        </Button>
+                        <Button variant="ghost" size="sm">Docs</Button>
+                        <ConnectButton />
+                    </div>
+                </div>
+                <div className="flex space-x-4 px-4">
+                    {menuItems.map((item, index) => (
+                        <Link key={index} href={item.href} passHref>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`text-sm ${router.pathname === item.href ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
+                            >
+                                {item.label}
+                            </Button>
+                        </Link>
+                    ))}
+                </div>
+            </nav>
+            <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-col min-h-screen bg-neutral-800 text-gray-100">
+                    <main className="flex-1 flex">
+                        <div className="w-72 border-r border-gray-800 p-4 hidden md:block dark:bg-neutral-900">
+                            <h2 className="font-semibold mb-4 text-gray-100">Import Repository</h2>
+                            <nav className="space-y-2">
+                                <Link
+                                    className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                                    href="#"
+                                >
+                                    <Github className="h-5 w-5" />
+                                    <span>GitHub</span>
+                                </Link>
+                                <div className="flex items-center space-x-2 text-gray-500 cursor-not-allowed">
+                                    <GitBranch className="h-5 w-5" />
+                                    <span>Protocol land</span>
+                                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-full ml-auto border border-green-400">Coming Soon</span>
+                                </div>
+                            </nav>
                         </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                        {open && <div className="py-5 text-muted-foreground text-center">
-                            <div className="mb-2">Deployment Fund</div>
-                            <div>{`${arBalance}`.substring(0, 4)} $AR | ? turbo credits</div>
-                            <div className="text-xs mt-2 -mx-2 leading-relaxed text-justify">
-                                The service uses a central wallet topped up with $AR and turbo credits to ease your deployment process.
-                                To contribute to deployment fund,
-                                gift turbo credits or send $AR at<br />
-                                <span className="font-mono bg-black/30 p-1 rounded text-[10.5px]">{DEPLOYMENT_WALLET}</span></div>
-                        </div>}
-                        {open ? <ConnectButton /> : <UserCircle2 size={30} className="bg-black rounded-full p-1 mb-3" />}
-                    </div>
-                </SidebarBody>
-            </Sidebar>
-            <div className="flex flex-1">
-                <div className="p-2 md:p-10 rounded-t-2xl md:rounded-r-none md:rounded-l-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full max-h-screen overflow-scroll">
+                    </main>
+                </div>
+                <div className="flex-1  rounded-t-2xl md:rounded-none bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 overflow-auto">
                     {connected ? children : "Connect Wallet to continue :)"}
-                </div></div>
+                </div>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 p-4 border-t border-neutral-200 dark:border-neutral-700">
+                <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    <div className="mb-2">Deployment Fund</div>
+                    <div>{`${arBalance}`.substring(0, 4)} $AR | ? turbo credits</div>
+                    <div className="text-xs mt-2 leading-relaxed">
+                        The service uses a central wallet topped up with $AR and turbo credits to ease your deployment process.
+                        To contribute to deployment fund, gift turbo credits or send $AR at
+                        <span className="font-mono bg-black/30 p-1 rounded text-[10.5px] ml-1">{DEPLOYMENT_WALLET}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

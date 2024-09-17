@@ -20,6 +20,7 @@ import { useGlobalState } from "@/hooks";
 import useDeploymentManager from "@/hooks/useDeploymentManager";
 import { TDeployment } from "@/types";
 import { Button } from "@/components/ui/button";
+import SearchActionBar from "@/components/SearchAction";
 
 export default function Dashboard() {
     const { connected, connect } = useConnection()
@@ -30,13 +31,18 @@ export default function Dashboard() {
     useEffect(() => {
         console.log("connected", connected, address)
         refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return <Layout>
-        <div className="text-xl">Your Deployments</div>
+        <div className="p-2 md:p-10">
+            <SearchActionBar />
+            <div className="text-xl">Your Deployments</div>
 
-        {!managerProcess && <div className="text-xl"><Loader className="animate-spin m-5 mx-auto" /></div>}
-        {managerProcess && deployments.length == 0 && <div className="text-muted-foreground mx-auto text-center">No deployments yet<br /><Link href="/deploy"><Button variant="link" className="text-muted-foreground p-0">Cilck here to create one</Button></Link></div>}
-        <HoverEffect items={deployments.map((dep: TDeployment) => { return { title: dep.Name, description: dep.RepoUrl, link: `/deployments/${dep.Name}` } })} />
+            {!managerProcess && <div className="text-xl"><Loader className="animate-spin m-5 mx-auto" /></div>}
+            {managerProcess && deployments.length == 0 && <div className="text-muted-foreground mx-auto text-center">No deployments yet<br /><Link href="/deploy"><Button variant="link" className="text-muted-foreground p-0">Cilck here to create one</Button></Link></div>}
+            <HoverEffect items={deployments.map((dep: TDeployment) => { return { title: dep.Name, description: dep.RepoUrl, link: `/deployments/${dep.Name}` } })} />
+
+        </div>
     </Layout>
 }
