@@ -14,8 +14,8 @@ import { BUILDER_BACKEND } from "@/lib/utils";
 import useDeploymentManager from "@/hooks/useDeploymentManager";
 
 type Branch = {
-    name: string
-}
+  name: string;
+};
 
 function Logs({ name, deploying }: { name: string; deploying?: boolean }) {
   const [output, setOutput] = useState("");
@@ -93,15 +93,15 @@ export default function Deploy() {
     setLoadingBranches(true);
     const [owner, repo] = repoFullName.split("/");
     try {
-        const response = await axios.get(`${BUILDER_BACKEND}/github/branches/${owner}/${repo}`);
-        console.log("Branches:", response.data);
-        setBranches(response.data);
+      const response = await axios.get(`${BUILDER_BACKEND}/github/branches/${owner}/${repo}`);
+      console.log("Branches:", response.data);
+      setBranches(response.data);
     } catch (error) {
-        console.error(error);
+      console.error(error);
     } finally {
-        setLoadingBranches(false);
+      setLoadingBranches(false);
     }
-}
+  }
 
   async function deploy() {
     if (!projName) return toast.error("Project Name is required");
@@ -142,6 +142,7 @@ export default function Deploy() {
 
       if (txid.status === 200) {
         toast.success("Deployment successful");
+        router.push(`https://arweave.net/${txid.data}`);
       }
     } catch (error) {
       toast.error("Deployment failed");
@@ -176,8 +177,8 @@ export default function Deploy() {
           <SelectContent>
             {branches.map((branch: Branch) => (
               <SelectItem key={branch.name} value={branch.name}>
-              {branch.name}
-            </SelectItem>
+                {branch.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
